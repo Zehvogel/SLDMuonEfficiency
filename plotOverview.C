@@ -15,8 +15,9 @@ void plotOverview(const TString ifname = "sld_out.root", const TString ofname = 
     std::unique_ptr<TH2F> mup_eff(f->Get<TH2F>("mup_eff"));
     
     auto c1 = std::make_unique<TCanvas>("mupi");
-    //auto c1 = new TCanvas("mupi");
-    c1->Divide(3,2);
+    auto c2 = std::make_unique<TCanvas>("mupi_effs");
+    c1->Divide(1, 3);
+    c2->Divide(1, 2);
 
     c1->cd(1)->SetLogy();
     mupip->SetStats(0);
@@ -37,7 +38,7 @@ void plotOverview(const TString ifname = "sld_out.root", const TString ofname = 
     mup_sum->SetTitle("#mu^{#pm} correct + #pi; cos(#theta); Momentum (GeV)   ");
     mup_sum->Draw("COLZ");
     
-    c1->cd(4)->SetLogy();
+    c2->cd(1)->SetLogy();
     mup_eff->SetStats(0);
     mup_eff->SetTitle("#mu^{#pm} eff; cos(#theta); Momentum (GeV)   ");
     mup_eff->Draw("COLZ");
@@ -48,7 +49,7 @@ void plotOverview(const TString ifname = "sld_out.root", const TString ofname = 
         one->SetBinContent(i, 1.0);
     }
 
-    c1->cd(5)->SetLogy();
+    c2->cd(2)->SetLogy();
     auto mup_ieff = (TH2F *) one->Clone();
     *mup_ieff = *mup_ieff - *mup_eff;
     mup_ieff->SetStats(0);
@@ -58,4 +59,5 @@ void plotOverview(const TString ifname = "sld_out.root", const TString ofname = 
     gStyle->SetPalette(palette);
     
     c1->SaveAs(ofname + std::to_string(palette) + ".pdf");
+    c2->SaveAs(ofname + "_effs_" + std::to_string(palette) + ".pdf");
 }

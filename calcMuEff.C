@@ -15,6 +15,7 @@
 #include <TVector3.h>
 #include <TStyle.h>
 #include <TFile.h>
+#include <TTree.h>
 
 
 using namespace lcio;
@@ -33,7 +34,7 @@ void calcMuEff(const char *fileName = "/afs/desy.de/group/flc/pool/reichenl/myMa
     for (int i = 0; i <= pbins; i++) {
         logbins[i] = TMath::Power(10, min_exp + i * width);
     }
-    
+
     Double_t costmin = abscost ? 0 : -1;
 
     auto mumup = new TH2F("mumup", "", cosbins, costmin, 1, logbins.size() - 1, logbins.data());
@@ -42,6 +43,13 @@ void calcMuEff(const char *fileName = "/afs/desy.de/group/flc/pool/reichenl/myMa
 
     auto lcReader = LCFactory::getInstance()->createLCReader();
     lcReader->open(fileName);
+
+    auto v_mumup = std::make_unique<std::vector<Double_t>>();
+    auto v_mumuc = std::make_unique<std::vector<Double_t>>();
+    auto v_mupip = std::make_unique<std::vector<Double_t>>();
+    auto v_mupic = std::make_unique<std::vector<Double_t>>();
+    auto v_muop  = std::make_unique<std::vector<Double_t>>();
+    auto v_muoc  = std::make_unique<std::vector<Double_t>>();
 
     while (const auto evt = lcReader->readNextEvent()) {
         auto rel = evt->getCollection(relColname);
@@ -70,14 +78,20 @@ void calcMuEff(const char *fileName = "/afs/desy.de/group/flc/pool/reichenl/myMa
                 {
                 case 13:
                     mumup->Fill(cos_th, P.Mag());
+                    v_mumup->push_back(P.Mag());
+                    v_mumuc->push_back(P.CosTheta());
                     break;
 
                 case 211:
                     mupip->Fill(cos_th, P.Mag());
+                    v_mupip->push_back(P.Mag());
+                    v_mupic->push_back(P.CosTheta());
                     break;
 
                 case 0:
                     muop->Fill(cos_th, P.Mag());
+                    v_muop->push_back(P.Mag());
+                    v_muoc->push_back(P.CosTheta());
                     break;
 
                 default:
@@ -109,6 +123,16 @@ void calcMuEff(const char *fileName = "/afs/desy.de/group/flc/pool/reichenl/myMa
     muop->Write();
     mup_all->Write();
     mup_eff->Write();
+
+    auto tree = TTree("sldmu", "");
+    tree.Branch("v_mumup", v_mumup.get());
+    tree.Branch("v_mumuc", v_mumuc.get());
+    tree.Branch("v_mupip", v_mupip.get());
+    tree.Branch("v_mupic", v_mupic.get());
+    tree.Branch("v_muop", v_muop.get());
+    tree.Branch("v_muoc", v_muoc.get());
+    tree.Fill();
+    tree.Write();
 
     outfile.Close();
 }
